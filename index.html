@@ -10,9 +10,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@400;500;700&family=Cairo:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Cold War Calm -->
-    <!-- Application Structure Plan: A single-page application with a collapsible sidebar for mobile and a fixed sidebar for desktop, improving responsiveness. The main content area switches between thematic views. This structure avoids a long scroll and allows non-linear exploration. Key sections: 1) Introduction. 2) Interactive flowchart of system mechanics. 3) Comparative analysis of US vs. Soviet doctrines. 4) Dashboard of modern risks. This design enhances usability on all devices. Added language toggle for EN/AR. -->
+    <!-- Application Structure Plan: A single-page application with a collapsible sidebar for mobile and a fixed sidebar for desktop, improving responsiveness. The main content area switches between thematic views. This structure avoids a long scroll and allows non-linear exploration. Key sections: 1) Introduction. 2) Interactive flowchart of system mechanics. 3) Comparative analysis of US vs. Soviet doctrines. 4) Dashboard of modern risks. This design enhances usability on all devices. Added language toggle for EN/AR and a PDF download link. -->
     <!-- Visualization & Content Choices: 1) Activation Logic -> Goal: Organize -> Viz: Interactive HTML/CSS flowchart -> Interaction: Click steps to reveal text -> Justification: Simplifies complex process. 2) Doctrine Comparison -> Goal: Compare -> Viz: Side-by-side text and a Chart.js Bar Chart -> Interaction: Hover tooltips -> Justification: Visually distills philosophical differences. 3) Cyber Threats -> Goal: Inform -> Viz: Chart.js Donut Chart -> Interaction: Hover -> Justification: Shows risk composition. 4) System Evolution -> Goal: Show Change -> Viz: HTML/CSS Timeline -> Interaction: Click for info -> Justification: Intuitive for history. All elements are now translatable. -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- GitHub Hosting Note: For the "Download Full Report" button to work, place the PDF file named 'Dead_Hand_System_Deep_Research.pdf' in the root directory of your GitHub repository, next to this HTML file. -->
     <style>
         :root { --font-en: 'Inter', sans-serif; --font-ar: 'Cairo', sans-serif; }
         body { font-family: var(--font-en); scroll-behavior: smooth; }
@@ -76,6 +77,12 @@
                         <li><a href="#comparison" class="nav-item block py-3 px-6 text-lg font-semibold" data-section="comparison" data-translate-key="nav_comparison">Doctrinal Divide</a></li>
                         <li><a href="#risks" class="nav-item block py-3 px-6 text-lg font-semibold" data-section="risks" data-translate-key="nav_risks">Modern Threats</a></li>
                         <li><a href="#conclusion" class="nav-item block py-3 px-6 text-lg font-semibold" data-section="conclusion" data-translate-key="nav_legacy">Legacy</a></li>
+                        <li>
+                            <a href="Dead_Hand_System_Deep_Research.pdf" download="Dead Hand System Deep Research.pdf" class="nav-item flex items-center gap-3 py-3 px-6 text-lg font-semibold text-blue-600 hover:bg-blue-100" data-translate-key="nav_download_report">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                                <span>Download Report</span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
                 <div class="p-6 text-center">
@@ -227,6 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
             nav_comparison: "Doctrinal Divide",
             nav_risks: "Modern Threats",
             nav_legacy: "Legacy",
+            nav_download_report: "<span>Download Report</span>",
             lang_button: "Switch to Arabic",
             lang_button_mobile: "العربية",
             created_by_line_1: "Created by<br><span class=\"font-semibold text-gray-800\">Ahmed Salem</span>",
@@ -310,6 +318,7 @@ document.addEventListener('DOMContentLoaded', function () {
             nav_comparison: "الانقسام العقائدي",
             nav_risks: "التهديدات الحديثة",
             nav_legacy: "الإرث",
+            nav_download_report: "<span>تحميل التقرير</span>",
             lang_button: "التحويل للإنجليزية",
             lang_button_mobile: "English",
             created_by_line_1: "تم الإنشاء بواسطة<br><span class=\"font-semibold text-gray-800\">أحمد سالم</span>",
@@ -410,7 +419,13 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('[data-translate-key]').forEach(el => {
             const key = el.dataset.translateKey;
             if (translations[currentLang][key]) {
-                el.innerHTML = translations[currentLang][key];
+                 if (key === 'nav_download_report') {
+                    // Special handling for the download link to keep the SVG icon
+                    const textSpan = el.querySelector('span');
+                    if(textSpan) textSpan.innerHTML = translations[currentLang][key];
+                } else {
+                    el.innerHTML = translations[currentLang][key];
+                }
             }
         });
         document.documentElement.lang = currentLang;
