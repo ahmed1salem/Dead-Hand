@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Dead Hand: An Interactive Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Cold War Calm -->
+    <!-- Application Structure Plan: A single-page application with a collapsible sidebar for mobile and a fixed sidebar for desktop, improving responsiveness. The main content area switches between thematic views. This structure avoids a long scroll and allows non-linear exploration. Key sections: 1) Introduction. 2) Interactive flowchart of system mechanics. 3) Comparative analysis of US vs. Soviet doctrines. 4) Dashboard of modern risks. This design enhances usability on all devices. -->
+    <!-- Visualization & Content Choices: 1) Activation Logic -> Goal: Organize -> Viz: Interactive HTML/CSS flowchart -> Interaction: Click steps to reveal text -> Justification: Simplifies complex process. 2) Doctrine Comparison -> Goal: Compare -> Viz: Side-by-side text and a Chart.js Bar Chart -> Interaction: Hover tooltips -> Justification: Visually distills philosophical differences. 3) Cyber Threats -> Goal: Inform -> Viz: Chart.js Donut Chart -> Interaction: Hover -> Justification: Shows risk composition. 4) System Evolution -> Goal: Show Change -> Viz: HTML/CSS Timeline -> Interaction: Click for info -> Justification: Intuitive for history. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        .font-mono { font-family: 'Roboto Mono', monospace; }
+        .nav-item { transition: all 0.2s ease-in-out; border-left: 4px solid transparent; }
+        .nav-item.active { background-color: #374151; color: #F9FAFB; border-left-color: #EF4444; }
+        .nav-item:not(.active):hover { background-color: #e0e2e7; color: #1F2937; }
+        .content-section { display: none; }
+        .content-section.active { display: block; animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 350px; max-height: 45vh; }
+        @media (max-width: 768px) { .chart-container { height: 300px; } }
+        .flowchart-step { cursor: pointer; border: 2px solid #D1D5DB; transition: all 0.3s ease; }
+        .flowchart-step.active { border-color: #EF4444; background-color: #FEF2F2; transform: scale(1.03); box-shadow: 0 4px 14px 0 rgba(0,0,0,0.1); }
+        .flowchart-arrow { position: relative; text-align: center; }
+        .flowchart-arrow::after { content: '↓'; font-size: 2rem; color: #9CA3AF; position: absolute; left: 50%; transform: translateX(-50%); }
+        .timeline-item::before { content: ''; position: absolute; left: -2.375rem; top: 0.25rem; width: 1.25rem; height: 1.25rem; background-color: #9CA3AF; border-radius: 9999px; border: 4px solid #f3f4f6; transition: background-color 0.3s ease; }
+        .timeline-item.active::before { background-color: #EF4444; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <div class="flex flex-col min-h-screen">
+        <div class="relative md:flex flex-grow">
+            <!-- Mobile Nav Toggle -->
+            <div class="md:hidden flex justify-between items-center bg-gray-200 p-4 sticky top-0 z-10">
+                 <h1 class="text-xl font-bold text-gray-900 font-mono">DEAD HAND</h1>
+                <button id="mobile-menu-button" class="text-gray-700 focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+            </div>
+
+            <!-- Sidebar -->
+            <nav id="sidebar" class="w-64 bg-gray-200 text-gray-700 flex-shrink-0 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-200 ease-in-out z-20 flex flex-col">
+                <div class="flex-grow">
+                    <div class="p-6 hidden md:block">
+                        <h1 class="text-2xl font-bold text-gray-900 font-mono">DEAD HAND</h1>
+                        <p class="text-sm text-gray-600">Interactive Analysis</p>
+                    </div>
+                    <ul id="navigation" class="mt-4 md:mt-0">
+                        <li><a href="#introduction" class="nav-item block py-3 px-6 text-lg font-semibold active" data-section="introduction">Introduction</a></li>
+                        <li><a href="#mechanics" class="nav-item block py-3 px-6 text-lg font-semibold" data-section="mechanics">How It Works</a></li>
+                        <li><a href="#comparison" class="nav-item block py-3 px-6 text-lg font-semibold" data-section="comparison">Doctrinal Divide</a></li>
+                        <li><a href="#risks" class="nav-item block py-3 px-6 text-lg font-semibold" data-section="risks">Modern Threats</a></li>
+                        <li><a href="#conclusion" class="nav-item block py-3 px-6 text-lg font-semibold" data-section="conclusion">Legacy</a></li>
+                    </ul>
+                </div>
+                <div class="p-6 text-center">
+                    <p class="text-xs text-gray-600">Created by<br><span class="font-semibold text-gray-800">Ahmed Salem</span></p>
+                </div>
+            </nav>
+
+            <main class="flex-1 p-4 sm:p-6 md:p-10 bg-gray-50 overflow-y-auto">
+                <div id="content">
+                    <section id="introduction" class="content-section active">
+                        <h2 class="text-3xl md:text-4xl font-bold mb-4 text-gray-900">The Doomsday Paradox</h2>
+                        <p class="text-lg text-gray-600 mb-6 max-w-4xl">Welcome to the interactive analysis of Systema "Perimetr," more chillingly known as the "Dead Hand." This application explores the terrifying logic of a system designed to guarantee apocalyptic nuclear retaliation from beyond the grave. This introductory section frames the central paradox of the system: it was a weapon of mass destruction paradoxically conceived not just for vengeance, but to stabilize crisis decision-making. By ensuring a second strike was inevitable even after the state's leadership was annihilated, it gave Soviet leaders the confidence to wait, to not "launch on warning," and to avoid accidental war based on false alarms. Navigate the sections to your left to dissect its mechanics, compare it to its US counterpart, and understand the profound risks it still poses today.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl">
+                            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="text-xl font-bold mb-2 text-red-700">A Fail-Deadly Guarantee</h3>
+                                <p class="text-gray-700">The core purpose was to ensure a devastating second strike even if a "decapitation" attack wiped out the entire political and military command. This made the Soviet nuclear deterrent seem absolute and unbreakable.</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="text-xl font-bold mb-2 text-blue-700">A Buffer Against Haste</h3>
+                                <p class="text-gray-700">By guaranteeing retaliation, the system removed the immense pressure on leaders to launch missiles based on potentially faulty early-warning data. It bought them the most precious commodity in a crisis: time.</p>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <section id="mechanics" class="content-section">
+                        <h2 class="text-3xl md:text-4xl font-bold mb-4 text-gray-900">Anatomy of Retaliation</h2>
+                        <p class="text-lg text-gray-600 mb-8 max-w-4xl">This section provides an interactive walkthrough of how the Perimeter system functions. It is not a single button but a complex, multi-stage sequence of automated checks designed to answer one question: has the state been destroyed? Click on each step of the flowchart below to understand its role in the chilling logic of automated vengeance. The system is designed to proceed only if all previous conditions are met, culminating in the transfer of launch authority to a last-resort crew.</p>
+                        <div class="flex flex-col lg:flex-row gap-8">
+                            <div id="flowchart" class="w-full lg:w-2/5 space-y-4">
+                                <div id="step1" class="flowchart-step p-4 rounded-lg bg-white shadow-sm active">
+                                    <h4 class="font-bold text-lg">1. Manual Activation</h4>
+                                    <p class="text-sm">System is turned on by top leadership during a crisis.</p>
+                                </div>
+                                <div class="flowchart-arrow h-8"></div>
+                                <div id="step2" class="flowchart-step p-4 rounded-lg bg-white shadow-sm">
+                                    <h4 class="font-bold text-lg">2. Detect Nuclear Strikes</h4>
+                                    <p class="text-sm">A sensor network confirms physical detonations on home soil.</p>
+                                </div>
+                                <div class="flowchart-arrow h-8"></div>
+                                <div id="step3" class="flowchart-step p-4 rounded-lg bg-white shadow-sm">
+                                    <h4 class="font-bold text-lg">3. Check Command Link</h4>
+                                    <p class="text-sm">System attempts to contact the General Staff war room.</p>
+                                </div>
+                                <div class="flowchart-arrow h-8"></div>
+                                <div id="step4" class="flowchart-step p-4 rounded-lg bg-white shadow-sm">
+                                    <h4 class="font-bold text-lg">4. Infer Decapitation</h4>
+                                    <p class="text-sm">If no link, system infers leadership is gone.</p>
+                                </div>
+                                <div class="flowchart-arrow h-8"></div>
+                                <div id="step5" class="flowchart-step p-4 rounded-lg bg-white shadow-sm">
+                                    <h4 class="font-bold text-lg">5. Transfer Authority</h4>
+                                    <p class="text-sm">Launch authority passes to a surviving, hardened command post to launch command rockets.</p>
+                                </div>
+                            </div>
+                            <div class="w-full lg:w-3/5 bg-white p-6 rounded-lg shadow-inner border border-gray-200">
+                                <div id="flowchart-details"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="comparison" class="content-section">
+                        <h2 class="text-3xl md:text-4xl font-bold mb-4 text-gray-900">A Tale of Two Doctrines</h2>
+                        <p class="text-lg text-gray-600 mb-8 max-w-4xl">The United States and the Soviet Union both faced the threat of a decapitation strike, but their solutions reveal profoundly different strategic philosophies. This section compares the Soviet "Perimeter" system with its American counterpart, the Emergency Rocket Communications System (ERCS). While both used rockets, their purpose was fundamentally different. The chart below visualizes the core conceptual divide: one system was built to automate authority, the other to preserve human command.</p>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="text-2xl font-bold mb-3 text-red-700">Perimeter (Soviet Union)</h3>
+                                <p class="font-semibold text-lg mb-2">Philosophy: Automate Authority</p>
+                                <p class="text-gray-700">Operated on the pessimistic assumption that the entire command structure would be destroyed. Its core function was to detect this condition and automatically transfer launch authority to a last-resort mechanism, bypassing the normal chain of command entirely. It was a solution for a world where the commanders were already dead.</p>
+                            </div>
+                             <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="text-2xl font-bold mb-3 text-blue-700">ERCS (United States)</h3>
+                                <p class="font-semibold text-lg mb-2">Philosophy: Preserve Command</p>
+                                <p class="text-gray-700">Operated on the more optimistic assumption that some element of the National Command Authority would survive. Its sole purpose was to act as a survivable radio tower—a communications link to ensure a decision made by a living human commander could be reliably transmitted to the forces who would execute it.</p>
+                            </div>
+                        </div>
+                         <div class="mt-8 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                            <h3 class="text-2xl font-bold text-center mb-4 text-gray-800">Core Concept Comparison</h3>
+                            <div class="chart-container">
+                                <canvas id="comparisonChart"></canvas>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <section id="risks" class="content-section">
+                        <h2 class="text-3xl md:text-4xl font-bold mb-4 text-gray-900">The Ghost in the Modern Machine</h2>
+                        <p class="text-lg text-gray-600 mb-8 max-w-4xl">The Dead Hand did not die with the Cold War. It remains an active, modernized component of Russia's nuclear arsenal, but this evolution has introduced new, complex risks. This dashboard explores the modern threats to the system, from cyberattacks to the perilous integration of AI. Use the timeline to track its evolution and the chart to see the breakdown of potential cyber threats. The very upgrades meant to make it more reliable may have also made it more vulnerable.</p>
+                        
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="text-2xl font-bold mb-4 text-gray-800">System Timeline</h3>
+                                <div class="relative pl-10 border-l-2 border-gray-300">
+                                    <div id="timeline-item-1" class="timeline-item mb-8 cursor-pointer active">
+                                        <h4 class="font-bold text-lg">1985: In Service</h4>
+                                        <p class="text-sm text-gray-600">The original Perimeter system officially enters combat duty.</p>
+                                    </div>
+                                    <div id="timeline-item-2" class="timeline-item mb-8 cursor-pointer">
+                                        <h4 class="font-bold text-lg">1991: ERCS Deactivated</h4>
+                                        <p class="text-sm text-gray-600">The US deactivates its ERCS counterpart post-Cold War.</p>
+                                    </div>
+                                    <div id="timeline-item-3" class="timeline-item mb-8 cursor-pointer">
+                                        <h4 class="font-bold text-lg">2011: Confirmed Operational</h4>
+                                        <p class="text-sm text-gray-600">Russian officials confirm Perimeter remains active.</p>
+                                    </div>
+                                     <div id="timeline-item-4" class="timeline-item cursor-pointer">
+                                        <h4 class="font-bold text-lg">2018-Present: Modernization</h4>
+                                        <p class="text-sm text-gray-600">Reports of upgrades with new missiles and potential AI integration.</p>
+                                    </div>
+                                </div>
+                                <div id="timeline-details" class="mt-4 p-4 bg-gray-100 rounded-lg"></div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                                <h3 class="text-2xl font-bold text-center mb-4 text-gray-800">Cyber Threat Vectors</h3>
+                                 <div class="chart-container">
+                                    <canvas id="risksChart"></canvas>
+                                </div>
+                                <p class="text-center text-gray-600 mt-4 text-sm">Hover over the chart to see how an adversary could attack the system's "Always/Never" principle.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="conclusion" class="content-section">
+                        <h2 class="text-3xl md:text-4xl font-bold mb-4 text-gray-900">The Enduring Shadow</h2>
+                        <p class="text-lg text-gray-600 mb-6 max-w-4xl">The Dead Hand is more than a weapon system; it is a terrifying artifact of strategic logic whose shadow lengthens into the 21st century. It forces a confrontation with the deepest paradoxes of deterrence: the idea that stability can be found in the guarantee of annihilation, that caution can be born from automating catastrophe, and that credibility can be rooted in inhumanity. As military technology, particularly AI, advances, the fundamental questions raised by Perimeter—about automation, control, risk, and ethics—are more urgent than ever.</p>
+                        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg shadow" role="alert">
+                            <p class="font-bold">A Perverse Logic</p>
+                            <p>Game theory suggests that by removing human hesitation, automated systems make threats more credible. This creates a chilling incentive to build systems that make the world objectively more dangerous, fueling a new arms race in speed and autonomy.</p>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+        <footer class="bg-gray-800 text-gray-300 py-5">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <p class="text-sm">Designed & Developed by <span class="font-semibold text-white">Ahmed Salem</span></p>
+                <p class="text-xs text-gray-400 mt-1">&copy; 2024 | All content is for analytical and educational purposes.</p>
+            </div>
+        </footer>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const sidebar = document.getElementById('sidebar');
+    const navigation = document.getElementById('navigation');
+    const content = document.getElementById('content');
+    const navItems = document.querySelectorAll('.nav-item');
+    const sections = document.querySelectorAll('.content-section');
+
+    const flowchartSteps = document.querySelectorAll('.flowchart-step');
+    const flowchartDetailsContainer = document.getElementById('flowchart-details');
+
+    const timelineItems = document.querySelectorAll('.timeline-item');
+    const timelineDetailsContainer = document.getElementById('timeline-details');
+
+    mobileMenuButton.addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-full');
+    });
+
+    const flowchartData = {
+        step1: {
+            title: "1. Manual Activation: The Human Gate",
+            text: "The system is not always watching. During peacetime, it lies dormant. It is only manually activated by the highest level of national leadership when a nuclear attack is deemed imminent. This first step is the most critical human decision in the entire process, serving as the primary safeguard against accidental activation."
+        },
+        step2: {
+            title: "2. Detect Nuclear Strikes: Physical Proof",
+            text: "Once active, Perimeter does not rely on early-warning radars, which can be spoofed. Instead, it waits for physical, undeniable proof of attack by monitoring a vast network of ground sensors for seismic shocks, extreme radiation spikes, atmospheric overpressure, and the intense light flash characteristic of nuclear detonations. This feature is what allows leaders to avoid a hasty 'launch-on-warning' response."
+        },
+        step3: {
+            title: "3. Check Command Link: Is Anyone Home?",
+            text: "After confirming nuclear impacts, the system performs a crucial electronic check. It 'pings' the hardened war rooms of the General Staff, attempting to establish a communication link with the central military authority. If the connection is live and stable, the system assumes leadership is intact and stands down, waiting for human orders."
+        },
+        step4: {
+            title: "4. Infer Decapitation: The Apocalyptic Logic",
+            text: "If the system confirms widespread nuclear detonations AND the communication link to the General Staff is completely dead, it makes its final, chilling inference: a successful decapitation strike has occurred. The logic dictates that this combination of events can only mean the nation's leadership has been eliminated and is incapable of ordering a retaliation."
+        },
+        step5: {
+            title: "5. Transfer Authority: The Final Act",
+            text: "The system does not launch the ICBMs itself. Instead, its final action is to transfer launch authority away from the presumed-dead leadership to a small, pre-authorized crew of duty officers located in a deep, super-hardened underground command post (like Kosvinsky Kamen). These officers would then execute the launch of special command rockets, which broadcast the final retaliation orders to the entire nuclear arsenal."
+        }
+    };
+
+    const timelineData = {
+        'timeline-item-1': {
+            title: "1985: A Cold War Solution",
+            text: "The Perimeter system, developed in response to the 'decapitation strike' threat from fast and accurate US Trident missiles, becomes operational. Its purpose is to guarantee a Soviet second strike."
+        },
+        'timeline-item-2': {
+            title: "1991: A Divergent Path",
+            text: "Following the end of the Cold War, the United States deactivates its analogous ERCS system, deeming it obsolete. Russia, however, retains Perimeter, signalling its continued reliance on a guaranteed nuclear deterrent."
+        },
+        'timeline-item-3': {
+            title: "2011: Official Confirmation",
+            text: "After years of speculation, General Sergey Karakaev, commander of Russia's Strategic Rocket Forces, publicly confirms that the Perimeter system exists and remains fully operational, integrated into the Russian Federation's command structure."
+        },
+        'timeline-item-4': {
+            title: "Modernization & New Risks",
+            text: "Russia announces ongoing modernization of its entire nuclear C2 infrastructure. Perimeter is reportedly being upgraded with new command missiles (likely mobile ICBMs like Yars) and integrated with new sensor networks and weapon systems, including hypersonic gliders. This digitization, however, exposes the aging system to new cyber threats."
+        }
+    };
+
+    function switchView(sectionId, fromNav = false) {
+        navItems.forEach(item => {
+            item.classList.toggle('active', item.dataset.section === sectionId);
+        });
+        sections.forEach(section => {
+            section.classList.toggle('active', section.id === sectionId);
+        });
+        if (fromNav && window.innerWidth < 768) {
+            sidebar.classList.add('-translate-x-full');
+        }
+    }
+
+    navigation.addEventListener('click', (e) => {
+        const target = e.target.closest('a');
+        if (target && target.dataset.section) {
+            e.preventDefault();
+            const sectionId = target.dataset.section;
+            switchView(sectionId, true);
+            window.location.hash = sectionId;
+        }
+    });
+
+    function updateFlowchartDetails(stepId) {
+        const data = flowchartData[stepId];
+        flowchartDetailsContainer.innerHTML = `<h3 class="text-2xl font-bold mb-3 text-gray-800">${data.title}</h3><p class="text-gray-700 leading-relaxed">${data.text}</p>`;
+        flowchartSteps.forEach(step => {
+            step.classList.toggle('active', step.id === stepId);
+        });
+    }
+
+    flowchartSteps.forEach(step => {
+        step.addEventListener('click', () => {
+            updateFlowchartDetails(step.id);
+        });
+    });
+
+    function updateTimelineDetails(itemId) {
+        const data = timelineData[itemId];
+        timelineDetailsContainer.innerHTML = `<h4 class="font-bold text-lg mb-2">${data.title}</h4><p>${data.text}</p>`;
+        timelineItems.forEach(item => {
+            item.classList.toggle('active', item.id === itemId);
+        });
+    }
+
+    timelineItems.forEach(item => {
+        item.addEventListener('click', () => {
+            updateTimelineDetails(item.id);
+        });
+    });
+    
+    let comparisonChartInstance, risksChartInstance;
+
+    function initializeCharts() {
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = '#4b5563';
+
+        if (comparisonChartInstance) comparisonChartInstance.destroy();
+        const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+        comparisonChartInstance = new Chart(comparisonCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Soviet Perimeter', 'US ERCS'],
+                datasets: [{
+                    label: 'Automation Level',
+                    data: [90, 20],
+                    backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'Human Control Level',
+                    data: [10, 80],
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        stacked: true,
+                        max: 100,
+                        ticks: { callback: value => value + '%' }
+                    },
+                    y: { stacked: true }
+                },
+                plugins: {
+                    title: { display: true, text: 'Conceptual Philosophy: Automation vs. Human Control', font: {size: 16} },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.dataset.label}: ${context.parsed.x}%`
+                        }
+                    }
+                }
+            }
+        });
+
+        if (risksChartInstance) risksChartInstance.destroy();
+        const risksCtx = document.getElementById('risksChart').getContext('2d');
+        risksChartInstance = new Chart(risksCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Spoofing (False Warnings)', 'Denial of Service (Paralysis)', 'Unauthorized Use'],
+                datasets: [{
+                    label: 'Cyber Threat',
+                    data: [45, 40, 15],
+                    backgroundColor: ['#FBBF24', '#F87171', '#60A5FA'],
+                    borderColor: '#ffffff',
+                    borderWidth: 2,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                         callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                let value = context.parsed || 0;
+                                return `${label}: ${value}%`;
+                            },
+                             afterLabel: function(context) {
+                                let label = context.label || '';
+                                if(label.includes('Spoofing')) return "Tricks system into launching.";
+                                if(label.includes('Denial')) return "Prevents a legitimate launch.";
+                                if(label.includes('Unauthorized')) return "Hostile takeover of the system.";
+                                return null;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const initialSection = window.location.hash.substring(1) || 'introduction';
+    switchView(initialSection);
+    updateFlowchartDetails('step1');
+    updateTimelineDetails('timeline-item-1');
+    initializeCharts();
+});
+</script>
+</body>
+</html>
